@@ -16,9 +16,7 @@
  */
 package malpull;
 
-import exceptions.Error404NotFoundException;
-import exceptions.Error429TooManyRequestsException;
-import exceptions.HttpConnectionFailed;
+import exceptions.SampleNotFoundException;
 import java.io.IOException;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -56,11 +54,9 @@ public class Downloader {
      * @param url the URL to contact
      * @param requestBody the request body with the form data
      * @return the data that the API returned in the form of a byte array
-     * @throws HttpConnectionFailed if no HTTP connection can be established
-     * (either because the machine that executes the JAR has no internet, or
-     * because the host is unreachable)
+     * @throws SampleNotFoundException is thrown if the sample cannot be found
      */
-    public byte[] post(String url, RequestBody requestBody) throws HttpConnectionFailed {
+    public byte[] post(String url, RequestBody requestBody) throws SampleNotFoundException {
         //Create the request object based on the given URL, where the given request body is also used
         Request request = new Request.Builder()
                 .url(url)
@@ -71,13 +67,13 @@ public class Downloader {
         try (Response response = httpClient.newCall(request).execute()) {
             //Check the return value
             if (!response.isSuccessful()) {
-                throw new HttpConnectionFailed();
+                throw new SampleNotFoundException("Sample not found, HTTP status code: " + response.code() + " for URL: " + request.url());
             }
 
             //Return response body
             return response.body().bytes();
         } catch (IOException e) {
-            throw new HttpConnectionFailed();
+            throw new SampleNotFoundException("IOException in Dowlnoader.post for " + request.url());
         }
     }
 
@@ -87,33 +83,20 @@ public class Downloader {
      * @param request the request to send, which is already addressed to a
      * specific URL
      * @return the data that the API returned in the form of a byte array
-     * @throws HttpConnectionFailed if no HTTP connection can be established
-     * (either because the machine that executes the JAR has no internet, or
-     * because the host is unreachable)
-     * @throws Error404NotFoundException if the returned status code is 404 (Not
-     * Found)
-     * @throws Error429TooManyRequestsException if the returned status code is
-     * 429 (Too Many Requests)
+     * @throws SampleNotFoundException if the sample cannot be found
      */
-    public byte[] get(Request request) throws HttpConnectionFailed, Error404NotFoundException, Error429TooManyRequestsException {
+    public byte[] get(Request request) throws SampleNotFoundException {
         //Make the call
         try (Response response = httpClient.newCall(request).execute()) {
             //Check the response code
             if (!response.isSuccessful()) {
-                switch (response.code()) {
-                    case 404:
-                        throw new Error404NotFoundException();
-                    case 429:
-                        throw new Error429TooManyRequestsException();
-                    default:
-                        throw new HttpConnectionFailed();
-                }
+                throw new SampleNotFoundException("Sample not found, HTTP status code: " + response.code() + " for URL: " + request.url());
             }
 
             //Return response body
             return response.body().bytes();
         } catch (IOException e) {
-            throw new HttpConnectionFailed();
+            throw new SampleNotFoundException("IOException in Dowlnoader.get for " + request.url());
         }
     }
 }

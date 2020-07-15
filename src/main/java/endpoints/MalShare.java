@@ -16,10 +16,7 @@
  */
 package endpoints;
 
-import exceptions.Error404NotFoundException;
-import exceptions.Error429TooManyRequestsException;
 import exceptions.SampleNotFoundException;
-import exceptions.HttpConnectionFailed;
 import okhttp3.Request;
 
 /**
@@ -27,12 +24,7 @@ import okhttp3.Request;
  *
  * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
  */
-public class MalShare extends GenericEndpoint {
-
-    /**
-     * The API key that is used to interact with the MalShare API
-     */
-    private String key;
+public class MalShare extends GenericEndpoint implements IEndpoint {
 
     /**
      * Creates an object to interact with the MalShare API
@@ -41,9 +33,7 @@ public class MalShare extends GenericEndpoint {
      */
     public MalShare(String key) {
         //Sets the apiBase variable in the abstract GenericEndpoint class
-        super("https://malshare.com/api.php?api_key=" + key + "&action=");
-        //Sets the key variable
-        this.key = key;
+        super("https://malshare.com/api.php?api_key=" + key + "&action=", "MalShare");
     }
 
     /**
@@ -64,14 +54,10 @@ public class MalShare extends GenericEndpoint {
      *
      * @param hash the hash to look for
      * @return the sample as a byte array
-     * @throws HttpConnectionFailed if no connection can be made from the
-     * current machine, or to the given host
      * @throws SampleNotFoundException if the sample cannot be found
-     * @throws Error404NotFoundException if the target returns a 404 status code
-     * @throws Error429TooManyRequestsException if the target returns a 429
-     * status code
      */
-    public byte[] getSample(String hash) throws HttpConnectionFailed, SampleNotFoundException, Error404NotFoundException, Error429TooManyRequestsException {
+    @Override
+    public byte[] getSample(String hash) throws SampleNotFoundException {
         //Gets the URL
         String url = getDownloadUrl(hash);
         //Create the request based on the URL
@@ -90,7 +76,7 @@ public class MalShare extends GenericEndpoint {
          */
         if (temp.contains("Sample not found by hash")) {
             //If the sample cannot be found, an exception is thrown
-            throw new SampleNotFoundException();
+            throw new SampleNotFoundException("Sample " + hash + " not found on MalShare!");
         }
         //Return the sample
         return result;

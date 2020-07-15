@@ -32,14 +32,30 @@ public abstract class GenericEndpoint {
     protected Downloader downloader;
 
     /**
+     * The name of the endpoint
+     */
+    public String name;
+
+    /**
      * The base URL of the API, to which specific API actions can be appended
      */
     protected String apiBase;
 
-    public GenericEndpoint(String apiBase) {
+    public GenericEndpoint(String apiBase, String name) {
         //Sets the apiBase variable
         this.apiBase = apiBase;
         //Initialises the downloader class
         downloader = new Downloader();
+        //Sets the name variable
+        this.name = name;
+    }
+
+    /**
+     * Gets the endpoint name
+     *
+     * @return the name of the endpoint
+     */
+    public String getName() {
+        return name;
     }
 }

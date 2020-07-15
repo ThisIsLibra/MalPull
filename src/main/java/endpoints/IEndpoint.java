@@ -14,17 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package exceptions;
+package endpoints;
 
 /**
- * This exception is used when the HTTP request returns a 429 (Too Many
- * Requests) status code
  *
  * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
  */
-public class Error429TooManyRequestsException extends Exception {
+public interface IEndpoint {
 
-    public Error429TooManyRequestsException() {
+    /**
+     * Gets the sample from the endpoint, based on the given hash
+     *
+     * @param hash the hash of the file to download
+     * @return a byte[] that contains the file's data
+     * @throws Exception in case any error occurs
+     */
+    public byte[] getSample(String hash) throws Exception;
 
-    }
+    /**
+     * Gets the name of the endpoint
+     *
+     * @return
+     */
+    public String getName();
 }

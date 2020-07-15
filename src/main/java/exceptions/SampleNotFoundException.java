@@ -24,7 +24,7 @@ package exceptions;
  */
 public class SampleNotFoundException extends Exception {
 
-    public SampleNotFoundException() {
+    public SampleNotFoundException(String message) {
+        super(message);
     }
-
 }

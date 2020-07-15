@@ -16,9 +16,6 @@
  */
 package endpoints;
 
-import exceptions.Error404NotFoundException;
-import exceptions.Error429TooManyRequestsException;
-import exceptions.HttpConnectionFailed;
 import exceptions.SampleNotFoundException;
 import okhttp3.Request;
 import org.json.JSONArray;
@@ -29,7 +26,7 @@ import org.json.JSONObject;
  *
  * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
  */
-public class Koodous extends GenericEndpoint {
+public class Koodous extends GenericEndpoint implements IEndpoint {
 
     /**
      * The API key that is used to interact with the MalShare API
@@ -43,7 +40,7 @@ public class Koodous extends GenericEndpoint {
      */
     public Koodous(String key) {
         //Sets the apiBase variable in the abstract GenericEndpoint class
-        super("https://koodous.com/api/apks");
+        super("https://koodous.com/api/apks", "Koodous");
         //Sets the key variable
         this.key = key;
     }
@@ -54,14 +51,10 @@ public class Koodous extends GenericEndpoint {
      *
      * @param hash the hash to look for
      * @return the sample as a byte array
-     * @throws HttpConnectionFailed if no connection can be made from the
-     * current machine, or to the given host
      * @throws SampleNotFoundException if the sample cannot be found
-     * @throws Error404NotFoundException if the target returns a 404 status code
-     * @throws Error429TooManyRequestsException if the target returns a 429
-     * status code
      */
-    public byte[] getSample(String hash) throws HttpConnectionFailed, SampleNotFoundException, Error404NotFoundException, Error429TooManyRequestsException {
+    @Override
+    public byte[] getSample(String hash) throws SampleNotFoundException {
         //Get the SHA-256 hash via the search function of the API, as only SHA-256 hashes can be used when downloading a sample
         String sha256Hash = getSha256Hash(hash);
         //Return the API's response
@@ -81,7 +74,7 @@ public class Koodous extends GenericEndpoint {
      * @throws Error404NotFoundException if the target returns a 404 status code
      * @throws Error429TooManyRequestsException if the target returns a 429
      */
-    private String getSha256Hash(String hash) throws HttpConnectionFailed, SampleNotFoundException, Error404NotFoundException, Error429TooManyRequestsException {
+    private String getSha256Hash(String hash) throws SampleNotFoundException {
         //Create the url
         String url = apiBase + "?search=" + hash + "&page=%1&page_size=%100";
         //Create the requested, based on the given URL and with the required header token
@@ -97,7 +90,7 @@ public class Koodous extends GenericEndpoint {
         int count = jsonObject.optInt("count", 0);
         if (count == 0) {
             //If there are no hits, the sample is not present
-            throw new SampleNotFoundException();
+            throw new SampleNotFoundException("Sample " + hash + "  not found on Koodous!");
         }
         //Get the results if there are any
         JSONArray results = jsonObject.getJSONArray("results");
@@ -115,7 +108,7 @@ public class Koodous extends GenericEndpoint {
      * @throws Error404NotFoundException if the target returns a 404 status code
      * @throws Error429TooManyRequestsException if the target returns a 429
      */
-    private byte[] download(String hash) throws HttpConnectionFailed, Error404NotFoundException, Error429TooManyRequestsException {
+    private byte[] download(String hash) throws SampleNotFoundException {
         //Create the URL
         String url = apiBase + "/" + hash + "/download";
         //Prepare the request with teh API token
