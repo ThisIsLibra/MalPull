@@ -17,6 +17,7 @@
 package endpoints;
 
 /**
+ * The interface to use for all endpoints that are used
  *
  * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
  */

@@ -62,6 +62,11 @@ public class Arguments {
     private String virusTotalKey;
 
     /**
+     * The API key for Triage
+     */
+    private String triageKey;
+
+    /**
      * Creates an object that contains all parsed arguments
      * @param hashes all loaded hashes
      * @param outputPath the folder to write the downloads to
@@ -70,8 +75,9 @@ public class Arguments {
      * @param malwareBazaarKey the API key for Malware Bazaar
      * @param malShareKey the API key for MalShare
      * @param virusTotalKey  the API key for VirusTotal
+     * @param triageKey the API key for Triage
      */
-    public Arguments(Set<String> hashes, String outputPath, int threadCount, String koodousKey, String malwareBazaarKey, String malShareKey, String virusTotalKey) {
+    public Arguments(Set<String> hashes, String outputPath, int threadCount, String koodousKey, String malwareBazaarKey, String malShareKey, String virusTotalKey, String triageKey) {
         this.hashes = hashes;
         this.outputPath = outputPath;
         this.threadCount = threadCount;
@@ -79,6 +85,7 @@ public class Arguments {
         this.malwareBazaarKey = malwareBazaarKey;
         this.malShareKey = malShareKey;
         this.virusTotalKey = virusTotalKey;
+        this.triageKey = triageKey;
     }
 
     /**
@@ -135,5 +142,13 @@ public class Arguments {
      */
     public String getVirusTotalKey() {
         return virusTotalKey;
+    }
+
+    /**
+     * The API key of Triage, can be null if the API key is not used
+     * @return the API key
+     */
+    public String getTriageKey() {
+        return triageKey;
     }
 }

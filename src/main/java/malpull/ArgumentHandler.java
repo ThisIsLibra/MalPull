@@ -38,7 +38,7 @@ public class ArgumentHandler {
 
     /**
      * Parses the arguments into an Arguments object. Stops MalPull upon the
-     * occurence of an exception and prints a help message for the user
+     * occurrence of an exception and prints a help message for the user
      *
      * @param args the arguments to parse
      * @return the parsed arguments
@@ -77,6 +77,7 @@ public class ArgumentHandler {
         String malwareBazaarKey = null;
         String malShareKey = null;
         String virusTotalKey = null;
+        String triageKey = null;
         //Iterate through all keys, note that the endpoint prefix is case insensitive
         for (String key : keys) {
             if (key.toLowerCase().startsWith("koodous=".toLowerCase())) {
@@ -87,6 +88,8 @@ public class ArgumentHandler {
                 malShareKey = key.substring("malshare=".length(), key.length());
             } else if (key.toLowerCase().startsWith("virustotal=".toLowerCase())) {
                 virusTotalKey = key.substring("virustotal=".length(), key.length());
+            } else if (key.toLowerCase().startsWith("triage=".toLowerCase())) {
+                triageKey = key.substring("triage=".length(), key.length());
             }
         }
 
@@ -103,7 +106,7 @@ public class ArgumentHandler {
         }
 
         //Return the parsed arguments
-        return new Arguments(hashes, path.getAbsolutePath(), threadCount, koodousKey, malwareBazaarKey, malShareKey, virusTotalKey);
+        return new Arguments(hashes, path.getAbsolutePath(), threadCount, koodousKey, malwareBazaarKey, malShareKey, virusTotalKey, triageKey);
     }
 
     /**
@@ -160,7 +163,7 @@ public class ArgumentHandler {
      * Prints the program's usage
      */
     private static void printUsage() {
-        System.out.println("This tool downloads samples from MalShare, MalwareBazaar, Koodous, and VirusTotal based on given MD-5, SHA-1, or SHA-256 hashes.");
+        System.out.println("This tool downloads samples from MalShare, MalwareBazaar, Koodous, VirusTotal, and Hatching Triage based on given MD-5, SHA-1, or SHA-256 hashes.");
         System.out.println("The sample is written to the given output directory. API Keys for any of the used services is required.");
         System.out.println("Once all samples are downloaded, the hashes that couldn't be found will be listed.");
         System.out.println("For detailed information on the usage of MalPull, please visit https://maxkersten.nl/wordpress/projects/malpull/#usage");

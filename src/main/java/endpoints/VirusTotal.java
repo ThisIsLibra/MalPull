@@ -20,6 +20,7 @@ import exceptions.SampleNotFoundException;
 import okhttp3.Request;
 
 /**
+ * The class to get a sample from VirusTotal.
  *
  * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
  */
@@ -31,7 +32,8 @@ public class VirusTotal extends GenericEndpoint implements IEndpoint {
     private String key;
 
     /**
-     * Creates an object to interact with the VirusTotal endpoint, based on API version 2
+     * Creates an object to interact with the VirusTotal endpoint, based on API
+     * version 2
      *
      * @param key
      */

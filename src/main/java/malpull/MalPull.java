@@ -21,6 +21,7 @@ import endpoints.IEndpoint;
 import endpoints.Koodous;
 import endpoints.MalShare;
 import endpoints.MalwareBazaar;
+import endpoints.Triage;
 import endpoints.VirusTotal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -103,6 +104,10 @@ public class MalPull {
                 IEndpoint virusTotal = new VirusTotal(arguments.getVirusTotalKey());
                 endpoints.add(virusTotal);
             }
+            if (arguments.getTriageKey() != null) {
+                IEndpoint triage = new Triage(arguments.getTriageKey());
+                endpoints.add(triage);
+            }
 
             //Create a download worker for the hash, with all configured endpoints embedded
             DownloadWorker downloadWorker = new DownloadWorker(endpoints, arguments.getOutputPath(), hash, count, hashes.size());
@@ -116,7 +121,7 @@ public class MalPull {
         }
         //Notify the user that all downloads are finished
         System.out.println("");
-        System.out.println("All downloads finished! The sample number count is not always printed ascending as the threads print the messages.");
+        System.out.println("All downloads finished! The sample number count is not always printed in ascending order, as the threads print the messages.");
 
         //If some hashes could not be found, these are printed
         if (missingHashes.size() > 0) {
@@ -128,7 +133,7 @@ public class MalPull {
         //Get the time since the start of the downloading
         String time = getDuration(start);
         //Display the time that the download process took
-        System.out.println("\nDownloaded " + hashes.size() + " samples in " + time + "!");
+        System.out.println("\nDownloaded " + (hashes.size() - missingHashes.size()) + " samples in " + time + "!");
         //Exit the program explicitly, as it sometimes remains open in some edge cases
         System.exit(0);
     }
@@ -169,6 +174,6 @@ public class MalPull {
      * Prints the version information, together with an additional newline
      */
     private static void printVersionInformation() {
-        System.out.println("MalPull version 1.1-stable by Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]\n");
+        System.out.println("MalPull version 1.2-stable by Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]\n");
     }
 }
