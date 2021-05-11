@@ -88,6 +88,10 @@ public class MalPull {
         for (String hash : hashes) {
             count++;
             List<IEndpoint> endpoints = new ArrayList<>();
+            if (arguments.getTriageKey() != null) {
+                IEndpoint triage = new Triage(arguments.getTriageKey());
+                endpoints.add(triage);
+            }
             if (arguments.getMalwareBazaarKey() != null) {
                 IEndpoint malwareBazaar = new MalwareBazaar();
                 endpoints.add(malwareBazaar);
@@ -103,10 +107,6 @@ public class MalPull {
             if (arguments.getVirusTotalKey() != null) {
                 IEndpoint virusTotal = new VirusTotal(arguments.getVirusTotalKey());
                 endpoints.add(virusTotal);
-            }
-            if (arguments.getTriageKey() != null) {
-                IEndpoint triage = new Triage(arguments.getTriageKey());
-                endpoints.add(triage);
             }
 
             //Create a download worker for the hash, with all configured endpoints embedded
