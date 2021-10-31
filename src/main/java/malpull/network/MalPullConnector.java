@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * Copyright (C) 2020 Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package malpull;
+package malpull.network;
 
-import exceptions.SampleNotFoundException;
+import malpull.exceptions.SampleNotFoundException;
 import java.io.IOException;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -30,9 +30,9 @@ import okhttp3.Response;
  * that contact the API endpoints can contain the logic for the API, and this
  * code can be reused within all services.
  *
- * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * @author Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  */
-public class Downloader {
+public class MalPullConnector {
 
     /**
      * The HTTP client that sends out the request
@@ -40,10 +40,10 @@ public class Downloader {
     protected final OkHttpClient httpClient;
 
     /**
-     * Creates the Downloader object, via which GET and POST requests can be
+     * Creates the connector object, via which GET and POST requests can be
      * sent to a given address
      */
-    public Downloader() {
+    public MalPullConnector() {
         httpClient = new OkHttpClient();
     }
 
@@ -73,7 +73,7 @@ public class Downloader {
             //Return response body
             return response.body().bytes();
         } catch (IOException e) {
-            throw new SampleNotFoundException("IOException in Dowlnoader.post for " + request.url());
+            throw new SampleNotFoundException("IOException in Downloader.post for " + request.url() + ". Error:\n" + e.getMessage());
         }
     }
 
@@ -96,7 +96,7 @@ public class Downloader {
             //Return response body
             return response.body().bytes();
         } catch (IOException e) {
-            throw new SampleNotFoundException("IOException in Dowlnoader.get for " + request.url());
+            throw new SampleNotFoundException("IOException in Dowlnoader.get for " + request.url() + ". Error:\n" + e.getMessage());
         }
     }
 }

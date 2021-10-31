@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * Copyright (C) 2020 Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,135 +16,192 @@
  */
 package malpull;
 
-import concurrency.DownloadWorker;
-import endpoints.IEndpoint;
-import endpoints.Koodous;
-import endpoints.MalShare;
-import endpoints.MalwareBazaar;
-import endpoints.Triage;
-import endpoints.VirusTotal;
+import java.io.PrintStream;
+import malpull.model.Arguments;
+import malpull.endpoints.IEndpoint;
+import malpull.endpoints.Koodous;
+import malpull.endpoints.MalShare;
+import malpull.endpoints.MalwareBazaar;
+import malpull.endpoints.Triage;
+import malpull.endpoints.VirusTotal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import malpull.exceptions.NoArgumentsSetException;
+import malpull.model.MalPullResult;
 
 /**
- * This class is the main class of the project, and creates and calls all
- * objects. The project is set-up to have one malware repository service per
- * class, which is contacted via the service's API. The classes within the
- * <code>endpoints</code> package all correspond to a single service.
+ * This class can be used to use MalPull as a library in any project. The
+ * constructors provide the option to log data. The download function requires
+ * all parameters, which can be parsed via any front-end that is made, or
+ * directly via code if this class is imported as a library.<br>
+ * <br>
+ * To compile this project as a single JAR, use:
+ * <code>mvn clean compile assembly:single</code>. Install it in your local
+ * Maven repository to use it as a library in other projects, or copy the code
+ * into your project.
  *
- * The Downloader class, which resides in this package, functions as a wrapper
- * class around the OkHttp3 library that is being used to perform the HTTP
- * requests.
- *
- * To compile this project, use: mvn clean compile assembly:single
- *
- * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * @author Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  */
 public class MalPull {
+
+    /**
+     * A mapping where the keys are equal to the user-provided hashes, and the
+     * value per key is the endpoint the hash was downloaded from
+     */
+    private Map<String, String> downloadedSamples;
 
     /**
      * A list of hashes that could not be downloaded, taken from the
      * deduplicated input
      */
-    private static List<String> missingHashes = new ArrayList<>();
+    private List<String> missingHashes;
 
     /**
-     * Build using:
-     *
-     * mvn clean compile assembly:single
-     *
-     * @param args the command-line arguments
+     * The print stream to write the log to
      */
-    public static void main(String[] args) {
+    private PrintStream outputStream;
+
+    /**
+     * Creates the MalPull object, automatically initialising the required
+     * fields.
+     *
+     * @param outputStream the stream to write the logs to
+     */
+    public MalPull(PrintStream outputStream) {
+        //Initialise the downloaded samples mapping
+        downloadedSamples = new HashMap<>();
+        //Initialise the missing hashes list
+        missingHashes = new ArrayList<>();
+        //Set the output stream
+        this.outputStream = outputStream;
+        log(getVersionInformation());
+    }
+
+    /**
+     * Creates the MalPull object, automatically initialising the required
+     * fields. This instance will not have a logger, as it is not provided in
+     * the constructor
+     */
+    public MalPull() {
+        //Initialise the downloaded samples mapping
+        downloadedSamples = new HashMap<>();
+        //Initialise the missing hashes list
+        missingHashes = new ArrayList<>();
+        //Set the output stream to null, thereby disabling it
+        this.outputStream = null;
+    }
+
+    /**
+     * Creates a download worker object, which can be scheduled with the thread
+     * scheduler
+     *
+     * @param arguments the object that contains the API keys
+     * @param hash the hash of the sample to use
+     * @param count the number that corresponds with the hash (used in the
+     * logging as <em>count/total</em>, where total is the total amount of
+     * hashes in the arguments object
+     * @return a list of download workers, ready to be scheduled
+     */
+    private DownloadWorker getDownloadWorker(Arguments arguments, String hash, int count) {
+        //Create a list of endpoints
+        List<IEndpoint> endpoints = new ArrayList<>();
+        //Check all keys, and include endpoints for which keys are present
+        if (arguments.getTriageKey() != null) {
+            IEndpoint triage = new Triage(arguments.getTriageKey());
+            endpoints.add(triage);
+        }
+        if (arguments.getMalwareBazaarKey() != null) {
+            IEndpoint malwareBazaar = new MalwareBazaar();
+            endpoints.add(malwareBazaar);
+        }
+        if (arguments.getMalShareKey() != null) {
+            IEndpoint malShare = new MalShare(arguments.getMalShareKey());
+            endpoints.add(malShare);
+        }
+        if (arguments.getKoodousKey() != null) {
+            IEndpoint koodous = new Koodous(arguments.getKoodousKey());
+            endpoints.add(koodous);
+        }
+        if (arguments.getVirusTotalKey() != null) {
+            IEndpoint virusTotal = new VirusTotal(arguments.getVirusTotalKey());
+            endpoints.add(virusTotal);
+        }
+
+        //Create a download worker for the hash, with all configured endpoints embedded
+        DownloadWorker worker = new DownloadWorker(this, endpoints, arguments.getOutputPath(), hash, count, arguments.getHashes().size());
+        //Return the download worker
+        return worker;
+    }
+
+    /**
+     * Downloads all samples that correspond to the given hashes, using the
+     * given services, to the given folder. Each sample is equal to the given
+     * hash name. The logging is written to the stream that the constructor of
+     * this object received. If none is given (or if it is equal to null), the
+     * logging is not printed.<br>
+     * <br>
+     * This function can take a while to return, depending on the amount of
+     * hashes that are provided, and the speed of the enabled services. Take
+     * note of this!
+     *
+     * @param arguments the arguments to use
+     * @return the download result, providing insight into all downloaded
+     * samples, all missing hashes, and the time it took
+     * @throws NoArgumentsSetException if the given argument object is null
+     */
+    public MalPullResult download(Arguments arguments) throws NoArgumentsSetException {
+        //Check if the arguments are set
+        if (arguments == null) {
+            throw new NoArgumentsSetException("The arguments need to  be set prior to calling the download function");
+        }
+
+        /**
+         * The validity of the arguments are checked upon the creation of the
+         * arguments object, meaning that the presence of the object indicates
+         * that the values can be trusted
+         */
         //Get the start time
         long start = Instant.now().getEpochSecond();
-        //Show the version information
-        printVersionInformation();
-        /**
-         * Parse the arguments into a newly created object. If the arguments
-         * cannot be parsed properly, the error message is displayed and MalPull
-         * shuts down.
-         */
-        Arguments arguments = ArgumentHandler.handle(args);
-
-        //Show the input back to the user, as this helps to avoid mistakes
-        System.out.println("Read " + arguments.getHashes().size() + " hashes");
-        System.out.println("Downloading will be done using " + arguments.getThreadCount() + " thread(s)");
-        System.out.println("Output will be written to: " + arguments.getOutputPath());
-        System.out.println("");
-
-        //Get all hashes in deduplicated form
-        Set<String> hashes = arguments.getHashes();
 
         //Get the thread count from the parsed arguments
         ExecutorService executor = Executors.newFixedThreadPool(arguments.getThreadCount());
-        //Keep track of the count so each thread can print what number it had comapred to the total amount of downloads
-        int count = 0;
-        //Iterate through all hashes, adding an endpoint for each of the configured endpoints
-        for (String hash : hashes) {
-            count++;
-            List<IEndpoint> endpoints = new ArrayList<>();
-            if (arguments.getTriageKey() != null) {
-                IEndpoint triage = new Triage(arguments.getTriageKey());
-                endpoints.add(triage);
-            }
-            if (arguments.getMalwareBazaarKey() != null) {
-                IEndpoint malwareBazaar = new MalwareBazaar();
-                endpoints.add(malwareBazaar);
-            }
-            if (arguments.getMalShareKey() != null) {
-                IEndpoint malShare = new MalShare(arguments.getMalShareKey());
-                endpoints.add(malShare);
-            }
-            if (arguments.getKoodousKey() != null) {
-                IEndpoint koodous = new Koodous(arguments.getKoodousKey());
-                endpoints.add(koodous);
-            }
-            if (arguments.getVirusTotalKey() != null) {
-                IEndpoint virusTotal = new VirusTotal(arguments.getVirusTotalKey());
-                endpoints.add(virusTotal);
-            }
 
-            //Create a download worker for the hash, with all configured endpoints embedded
-            DownloadWorker downloadWorker = new DownloadWorker(endpoints, arguments.getOutputPath(), hash, count, hashes.size());
-            //Execute the download worker in the future, disregarding when specifically
-            executor.execute(downloadWorker);
+        int count = 0;
+        //Iterate over all hashes
+        for (String hash : arguments.getHashes()) {
+            //Increase the count, which indicates is used in the logging to display the progress with respect to the total amount of hashes
+            count++;
+            //Get the download worker for the given hash
+            DownloadWorker worker = getDownloadWorker(arguments, hash, count);
+            //Schedule the worker
+            executor.execute(worker);
         }
-        //Once all tasks are done, shut the executor down, meaning no new tasks can be added
+
+        //Once all workers are created, shut the executor down, meaning no new tasks can be added
         executor.shutdown();
         //Wait until the executor is terminated, which only happens when all downloads are finished
         while (!executor.isTerminated()) {
         }
-        //Notify the user that all downloads are finished
-        System.out.println("");
-        System.out.println("All downloads finished! The sample number count is not always printed in ascending order, as the threads print the messages.");
 
-        //If some hashes could not be found, these are printed
-        if (missingHashes.size() > 0) {
-            System.out.println("\n\nMissing " + missingHashes.size() + " hashes:");
-            for (String missingHash : missingHashes) {
-                System.out.println(missingHash);
-            }
-        }
-        //Get the time since the start of the downloading
+        //Get the time since the downloading started
         String time = getDuration(start);
-        //Display the time that the download process took
-        System.out.println("\nDownloaded " + (hashes.size() - missingHashes.size()) + " samples in " + time + "!");
-        //Exit the program explicitly, as it sometimes remains open in some edge cases
-        System.exit(0);
+
+        //Return the result to the caller
+        return new MalPullResult(downloadedSamples, missingHashes, time);
     }
 
     /**
      * Gets the duration from the given starting point until the moment this
-     * function is executed in the format of hh:mm:ss.
+     * function is executed in the format of <code>hhh:mm:ss</code>.
      *
      * @param start the time to start in seconds from epoch
      */
-    private static String getDuration(long start) {
+    private String getDuration(long start) {
         //Get the end time
         long end = Instant.now().getEpochSecond();
         //Calculate the time difference
@@ -157,23 +214,47 @@ public class MalPull {
         //Calculate the amount of hours
         long hours = (duration / (60 * 60)) % 24;
         //Format the times into a single string and return those
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        return String.format("%03d:%02d:%02d", hours, minutes, seconds);
     }
 
     /**
-     * As the add function is not thread safe, this synchronised function is
-     * used as a wrapper
+     * A thread safe function to write data to the given output stream
+     *
+     * @param message the message to log
+     */
+    protected synchronized void log(String message) {
+        if (outputStream == null) {
+            return;
+        }
+        outputStream.println(message);
+    }
+
+    /**
+     * A thread safe function to add a hash (and the endpoint it was downloaded
+     * from) to the mapping
+     *
+     * @param hash the hash to add
+     * @param endpoint the endpoint where the hash was downloaded from
+     */
+    protected synchronized void addDownloadedHash(String hash, String endpoint) {
+        downloadedSamples.put(hash, endpoint);
+    }
+
+    /**
+     * A thread safe function to add a missing hash to the list
      *
      * @param missingHash the hash to add
      */
-    public static synchronized void addMissingHash(String missingHash) {
+    protected synchronized void addMissingHash(String missingHash) {
         missingHashes.add(missingHash);
     }
 
     /**
-     * Prints the version information, together with an additional newline
+     * Gets the version information, together with an additional newline
+     *
+     * @return the version information
      */
-    private static void printVersionInformation() {
-        System.out.println("MalPull version 1.2-stable by Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]\n");
+    public String getVersionInformation() {
+        return "MalPull version 1.3-stable by Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]\n";
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * Copyright (C) 2020 Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,22 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package endpoints;
+package malpull.endpoints;
 
-import malpull.Downloader;
+import malpull.network.MalPullConnector;
 
 /**
  * This abstract class contains the shared code base for all endpoints, which is
  * done to re-use code.
  *
- * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * @author Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  */
 public abstract class GenericEndpoint {
 
     /**
      * The downloader wrapper class that is used to make HTTP requests
      */
-    protected Downloader downloader;
+    protected MalPullConnector downloader;
 
     /**
      * The name of the endpoint
@@ -45,7 +45,7 @@ public abstract class GenericEndpoint {
         //Sets the apiBase variable
         this.apiBase = apiBase;
         //Initialises the downloader class
-        downloader = new Downloader();
+        downloader = new MalPullConnector();
         //Sets the name variable
         this.name = name;
     }

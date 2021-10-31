@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * Copyright (C) 2021 Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,17 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package exceptions;
+package malpull.exceptions;
 
 /**
- * This exception is used when the sample cannot be found in the malware
- * service's database
+ * This exception is thrown if no hashes are provided
  *
- * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * @author Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  */
-public class SampleNotFoundException extends Exception {
+public class NoHashesFoundException extends Exception {
 
-    public SampleNotFoundException(String message) {
+    public NoHashesFoundException(String message) {
         super(message);
     }
 }

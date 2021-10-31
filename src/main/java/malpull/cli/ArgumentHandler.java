@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * Copyright (C) 2020 Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package malpull;
+package malpull.cli;
 
+import malpull.model.Arguments;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -24,26 +25,28 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import malpull.exceptions.NoHashesFoundException;
+import malpull.exceptions.NoServicesSetException;
 
 /**
  * This class parses the given arguments into an Arguments object, thereby
  * simplifying the code in the main function, and splitting the sanity checks
  * from the rest of the code
  *
- * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * @author Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  */
 public class ArgumentHandler {
 
     /**
-     * Parses the arguments into an Arguments object. Stops MalPull upon the
+     * Parses the arguments into an Arguments object.Stops MalPull upon the
      * occurrence of an exception and prints a help message for the user
      *
      * @param args the arguments to parse
      * @return the parsed arguments
+     * @throws NoServicesSetException if none of the services are enabled
+     * @throws NoHashesFoundException if no hashes are provided
      */
-    public static Arguments handle(String[] args) {
+    public static Arguments handle(String[] args) throws NoServicesSetException, NoHashesFoundException {
         //Only 4 arguments are accepted:
         //java -jar malpull.jar threadCount /path/to/keys.txt /path/to/hashes.txt /path/to/write/samples/to
         if (args.length != 4) {
@@ -81,7 +84,7 @@ public class ArgumentHandler {
         //Iterate through all keys, note that the endpoint prefix is case insensitive
         for (String key : keys) {
             if (key.toLowerCase().startsWith("koodous=".toLowerCase())) {
-                koodousKey = key.substring("koodous".length(), key.length());
+                koodousKey = key.substring("koodous=".length(), key.length());
             } else if (key.toLowerCase().startsWith("malwarebazaar=".toLowerCase())) {
                 malwareBazaarKey = key.substring("malwarebazaar=".length(), key.length());
             } else if (key.toLowerCase().startsWith("malshare=".toLowerCase())) {
@@ -140,7 +143,6 @@ public class ArgumentHandler {
             }
         } catch (IOException ex) {
             System.out.println("An exception occured when reading " + file.getAbsolutePath() + ":");
-            Logger.getLogger(MalPull.class.getName()).log(Level.SEVERE, null, ex);
             System.exit(0);
         }
         return output;
@@ -166,7 +168,7 @@ public class ArgumentHandler {
         System.out.println("This tool downloads samples from MalShare, MalwareBazaar, Koodous, VirusTotal, and Hatching Triage based on given MD-5, SHA-1, or SHA-256 hashes.");
         System.out.println("The sample is written to the given output directory. API Keys for any of the used services is required.");
         System.out.println("Once all samples are downloaded, the hashes that couldn't be found will be listed.");
-        System.out.println("For detailed information on the usage of MalPull, please visit https://maxkersten.nl/wordpress/projects/malpull/#usage");
+        System.out.println("For detailed information on the usage of MalPull, please visit https://maxkersten.nl/projects/malpull/#usage");
         System.out.println("");
         System.out.println("Sample usage of this program:");
         System.out.println("\t\tjava -jar /path/toMalPull.jar threadCount /path/to/keys.txt /path/to/hashes.txt /path/to/write/samples/to");

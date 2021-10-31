@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * Copyright (C) 2020 Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package concurrency;
+package malpull;
 
-import endpoints.*;
-import exceptions.SampleNotFoundException;
+import malpull.endpoints.IEndpoint;
+import malpull.exceptions.SampleNotFoundException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,9 +30,14 @@ import malpull.MalPull;
  * of the endpoints in the list. If it fails, the hash is added to the missing
  * hashes list in the main class.
  *
- * @author Max 'Libra' Kersten [@LibraAnalysis, https://maxkersten.nl]
+ * @author Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  */
 public class DownloadWorker implements Runnable {
+
+    /**
+     * The instance of MalPull to connect back to
+     */
+    private MalPull malPull;
 
     /**
      * The list of endpoints iterate through in an attempt to download the hash
@@ -64,6 +69,7 @@ public class DownloadWorker implements Runnable {
     /**
      * Creates a worker object, which can be queued for the thread pool
      *
+     * @param malPull the MalPull instance to connect back to
      * @param endpoints the list of endpoints to attempt to download from
      * @param path the location to write the file to the disk
      * @param hash the hash to look for
@@ -71,7 +77,8 @@ public class DownloadWorker implements Runnable {
      * creation
      * @param total the total number of samples to be downloaded
      */
-    public DownloadWorker(List<IEndpoint> endpoints, String path, String hash, int count, int total) {
+    public DownloadWorker(MalPull malPull, List<IEndpoint> endpoints, String path, String hash, int count, int total) {
+        this.malPull = malPull;
         this.endpoints = endpoints;
         this.path = path;
         this.hash = hash;
@@ -110,26 +117,29 @@ public class DownloadWorker implements Runnable {
                         //The file is written to disk
                         writeToDisk(output, filePath);
                         //A message is printed for the user
-                        System.out.println("Wrote " + output.length + " bytes to " + filePath + " from " + endpoint.getName() + " (" + count + " / " + total + ")");
+                        malPull.log("(" + count + " / " + total + ") Wrote " + output.length + " bytes to " + filePath + " from " + endpoint.getName());
+                        //Add the hash to the log
+                        malPull.addDownloadedHash(hash, endpoint.getName());
                         //The boolean is set to true, causing the next iteration to break out of the loop
                         isDownloaded = true;
                     }
-                } catch (SampleNotFoundException e) {
+                } catch (SampleNotFoundException ex) {
                     /**
                      * The exception message can be ignored, as failure to
                      * download the sample results in the missing hash, but only
                      * if none of the configured endpoints has the hash
                      */
-                    //System.out.println(e.getMessage());
                 }
             }
             //If the sample is not downloaded after the loop, it is missing
             if (isDownloaded == false) {
                 //This method is thread safe
-                MalPull.addMissingHash(hash);
+                malPull.addMissingHash(hash);
+                malPull.log("(" + count + " / " + total + ") Added \"" + hash + "\" to the missing hashes");
             }
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            String message = "(" + count + " / " + total + ") An error occured when downloading " + hash + ":\n" + ex.getMessage();
+            malPull.log(message);
         }
     }
 
@@ -143,7 +153,7 @@ public class DownloadWorker implements Runnable {
         try (FileOutputStream fos = new FileOutputStream(path)) {
             fos.write(output);
         } catch (IOException ex) {
-            System.out.println("An error occured when writing the sample to \"" + path + "\". Verify your permissions and try again!");
+            malPull.log("An error occured when writing the sample to \"" + path + "\". Check the permissions and try again! Error:\n" + ex.getMessage());
         }
     }
 }
