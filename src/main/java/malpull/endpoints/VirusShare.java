@@ -68,7 +68,7 @@ public class VirusShare extends GenericEndpoint implements IEndpoint {
                     .url(url)
                     .build();
             byte[] zip = downloader.get(request);
-            return unzipSample(zip);
+            return unzipSample(zip, hash);
         } catch (Exception e) {
             throw new SampleNotFoundException(e.getMessage());
         }
@@ -78,13 +78,16 @@ public class VirusShare extends GenericEndpoint implements IEndpoint {
      * Unzips a given zip archive
      *
      * @param rawZip the zip archive to unzip
+     * @param hash the hash of the file, which is ought to be unique, thus no
+     * race condition is possible when using this function in a multi-threaded
+     * manner
      * @return the first file from the archive (which should be the only file in
      * the archive)
      * @throws IOException if the archive extraction fails
      */
-    private byte[] unzipSample(byte[] rawZip) throws IOException {
+    private byte[] unzipSample(byte[] rawZip, String hash) throws IOException {
         //Unzip file, password is "infected"
-        String tempPath = System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + "all_yara_rules.zip";
+        String tempPath = System.getProperty("java.io.tmpdir") + System.getProperty("file.separator") + hash;
         List<byte[]> files = readZipArchive(rawZip, tempPath, "infected");
         if (files.isEmpty() == false) {
             return files.get(0);
