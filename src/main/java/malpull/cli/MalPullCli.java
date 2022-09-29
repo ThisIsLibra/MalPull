@@ -52,6 +52,12 @@ public class MalPullCli {
             //Parse the arguments
             Arguments arguments = ArgumentHandler.handle(args);
 
+            System.out.println("The available platforms are:");
+            for (String platform : arguments.getAvailablePlatforms()) {
+                System.out.println("\t" + platform);
+            }
+            System.out.println("");
+
             //Show the input to the user, as this helps to avoid mistakes
             System.out.println("Read " + arguments.getHashes().size() + " hashes");
             System.out.println("Downloading will be done using " + arguments.getThreadCount() + " thread(s)");
@@ -65,7 +71,7 @@ public class MalPullCli {
             System.out.println("\nAll downloads finished! The sample number count is not always printed in ascending order, as the threads print the messages.");
 
             //If some hashes could not be found, these are printed
-            if (result.getMissingHashes().size() > 0) {
+            if (result.getMissingHashes().isEmpty() == false) {
                 System.out.println("\n\nMissing " + result.getMissingHashes().size() + " hashes:");
                 for (String missingHash : result.getMissingHashes()) {
                     System.out.println(missingHash);

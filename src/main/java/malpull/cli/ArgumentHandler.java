@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -47,43 +48,45 @@ public class ArgumentHandler {
      * @throws NoHashesFoundException if no hashes are provided
      */
     public static Arguments handle(String[] args) throws NoServicesSetException, NoHashesFoundException {
-        //Only 4 arguments are accepted:
-        //java -jar malpull.jar threadCount /path/to/keys.txt /path/to/hashes.txt /path/to/write/samples/to
-        if (args.length != 4) {
+        //A minimum of two arguments are required: the destination folder for the downloaded samples, and one or more hashes:
+        //java -jar malpull.jar /path/to/write/samples/to hash1 hash2 hashN
+        //Note that the keys file is required to be in the same folder as the JAR
+        if (args.length < 2) {
             //If that is the case, the usage should be printed
             printUsage();
             //Then the system should exit
             System.exit(0);
         }
-        //Test if the thread count is a valid number
+
+        String keysPath = null;
+        //Get each key per line, sanity checks are performed within the loadFile function
         try {
-            Integer.parseInt(args[0]);
-        } catch (Exception e) {
-            System.out.println("Please provide a valid number for the thread count: " + args[0]);
-            System.exit(0);
-        }
-        //Get the thread count if its a valid number
-        int threadCount = Integer.parseInt(args[0]);
-        if (threadCount <= 0) {
-            System.out.println("At least 1 thread is required!");
+            String baseFolder = new File(malpull.MalPull.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParentFile().getAbsolutePath();
+            keysPath = baseFolder + File.separator + "keys.txt";
+        } catch (URISyntaxException e) {
+            System.out.println("The JAR's location cannot be obtained, check your privilege and try again!");
             System.exit(0);
         }
 
-        //Get each key per line, sanity checks are performed within the loadFile function
-        List<String> keys = loadFile(args[1]);
+        List<String> keys = loadFile(keysPath);
         /**
          * Initialise all strings as null, only changing the value if it is
          * included in the keys list. Only if the value is not null, it should
          * be used later on
          */
+        String threadsString = null;
         String koodousKey = null;
         String malwareBazaarKey = null;
         String malShareKey = null;
         String virusTotalKey = null;
         String triageKey = null;
+        String virusShareKey = null;
+
         //Iterate through all keys, note that the endpoint prefix is case insensitive
         for (String key : keys) {
-            if (key.toLowerCase().startsWith("koodous=".toLowerCase())) {
+            if (key.toLowerCase().startsWith("threads=".toLowerCase())) {
+                threadsString = key.substring("threads=".length(), key.length());
+            } else if (key.toLowerCase().startsWith("koodous=".toLowerCase())) {
                 koodousKey = key.substring("koodous=".length(), key.length());
             } else if (key.toLowerCase().startsWith("malwarebazaar=".toLowerCase())) {
                 malwareBazaarKey = key.substring("malwarebazaar=".length(), key.length());
@@ -93,23 +96,52 @@ public class ArgumentHandler {
                 virusTotalKey = key.substring("virustotal=".length(), key.length());
             } else if (key.toLowerCase().startsWith("triage=".toLowerCase())) {
                 triageKey = key.substring("triage=".length(), key.length());
+            } else if (key.toLowerCase().startsWith("virusshare=".toLowerCase())) {
+                virusShareKey = key.substring("virusshare=".length(), key.length());
             }
+        }
+
+        int threadCount = -1;
+        try {
+            threadCount = Integer.parseInt(threadsString);
+        } catch (Exception e) {
+            System.out.println("Please provide a valid number for the thread count: " + args[0]);
+            System.exit(0);
+        }
+
+        if (threadCount <= 0) {
+            System.out.println("Please provide a non-negative non-zero number for the thread count within the keys file: " + threadCount);
+            System.exit(0);
         }
 
         //Create a new set to store all hashes in, as a set cannot contain duplicate strings
         Set<String> hashes = new HashSet<>();
-        //Add all hashes from the file into the set, sanity checks are performed within the loadFile function
-        hashes.addAll(loadFile(args[2]));
 
-        //Get the output path as a file object. The path is filtered for the home symbol
-        File path = new File(filterPath(args[3]));
-        //If it does not exist, any missing folder is created
+        //Add all hashes from the file into the set
+        for (int i = 1; i < args.length; i++) {
+            String hash = args[i];
+            if (hash.isBlank() == false) {
+                hashes.add(hash);
+            }
+        }
+
+        //Get the current working directory of the invoker
+        File path = null;
+
+        try {
+            path = new File(filterPath(args[0]));
+        } catch (Exception e) {
+            System.out.println("Please provide a valid path, the currently provided value is: " + args[0]);
+            System.exit(0);
+        }
+
+        //If it does not exist, any and all missing folders are created
         if (path.exists() == false) {
             path.mkdirs();
         }
 
         //Return the parsed arguments
-        return new Arguments(hashes, path.getAbsolutePath(), threadCount, koodousKey, malwareBazaarKey, malShareKey, virusTotalKey, triageKey);
+        return new Arguments(hashes, path.getAbsolutePath(), threadCount, koodousKey, malwareBazaarKey, malShareKey, virusTotalKey, triageKey, virusShareKey);
     }
 
     /**
@@ -125,7 +157,6 @@ public class ArgumentHandler {
         //Create the file object based on the given path
         path = filterPath(path);
         File file = new File(path);
-
         //Perform santiy checks
         if (file.isDirectory()) {
             System.out.println("The file at " + file.getAbsolutePath() + " is a directory!");
@@ -136,9 +167,12 @@ public class ArgumentHandler {
         }
 
         //Read the file, line by line where one line contains one hash
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+        try ( BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = br.readLine()) != null) {
+                if (line.isEmpty() || line.isBlank()) {
+                    continue;
+                }
                 output.add(line);
             }
         } catch (IOException ex) {
@@ -165,12 +199,13 @@ public class ArgumentHandler {
      * Prints the program's usage
      */
     private static void printUsage() {
-        System.out.println("This tool downloads samples from MalShare, MalwareBazaar, Koodous, VirusTotal, and Hatching Triage based on given MD-5, SHA-1, or SHA-256 hashes.");
+        System.out.println("This tool downloads samples from (and in order) Hatching Triage, Malware Bazaar, MalShare, VirusShare, VirusTotal, and Koodous, based on given MD-5, SHA-1, or SHA-256 hash(es).");
         System.out.println("The sample is written to the given output directory. API Keys for any of the used services is required.");
         System.out.println("Once all samples are downloaded, the hashes that couldn't be found will be listed.");
         System.out.println("For detailed information on the usage of MalPull, please visit https://maxkersten.nl/projects/malpull/#usage");
         System.out.println("");
         System.out.println("Sample usage of this program:");
-        System.out.println("\t\tjava -jar /path/toMalPull.jar threadCount /path/to/keys.txt /path/to/hashes.txt /path/to/write/samples/to");
+        System.out.println("\t\tjava -jar /path/toMalPull.jar /path/to/write/samples/to hash1 hash2 hashN");
+        System.out.println("Note that the keys.txt file is required to be in the same folder as MalPull's JAR!");
     }
 }

@@ -35,10 +35,10 @@ public class VirusTotal extends GenericEndpoint implements IEndpoint {
      * Creates an object to interact with the VirusTotal endpoint, based on API
      * version 2
      *
-     * @param key
+     * @param key the VT key
      */
     public VirusTotal(String key) {
-        super("https://www.virustotal.com/vtapi/v2/", "VirusTotal");
+        super("https://www.virustotal.com/api/v3/", "VirusTotal");
         this.key = key;
     }
 
@@ -52,10 +52,13 @@ public class VirusTotal extends GenericEndpoint implements IEndpoint {
     @Override
     public byte[] getSample(String hash) throws SampleNotFoundException {
         //Create the URL
-        String url = apiBase + "file/download?apikey=" + key + "&hash=" + hash;
+        String url = apiBase + "files/" + hash + "/download";
         //Prepare the request with the API token
         Request request = new Request.Builder()
                 .url(url)
+                .get()
+                .addHeader("Accept", "application/json")
+                .addHeader("x-apikey", key)
                 .build();
         //Return the value of the direct download link
         return downloader.get(request);

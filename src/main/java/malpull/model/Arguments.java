@@ -16,6 +16,8 @@
  */
 package malpull.model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import malpull.exceptions.NoHashesFoundException;
 import malpull.exceptions.NoServicesSetException;
@@ -70,6 +72,11 @@ public class Arguments {
     private String triageKey;
 
     /**
+     * The API key for VirusShare
+     */
+    private String virusShareKey;
+
+    /**
      * Creates an object that contains all parsed arguments
      *
      * @param hashes all loaded hashes, cannot be null or empty
@@ -86,12 +93,14 @@ public class Arguments {
      * not to be used
      * @param triageKey the API key for Triage, null if the service is not to be
      * used
+     * @param virusShareKey the API key for VirusShare, null if the service is
+     * not to be used
      * @throws NoServicesSetException if all of the API key strings are null at
      * the same time, meaning no services will be reached
      * @throws NoHashesFoundException if the given set of hashes is null or
      * empty
      */
-    public Arguments(Set<String> hashes, String outputPath, int threadCount, String koodousKey, String malwareBazaarKey, String malShareKey, String virusTotalKey, String triageKey) throws NoServicesSetException, NoHashesFoundException {
+    public Arguments(Set<String> hashes, String outputPath, int threadCount, String koodousKey, String malwareBazaarKey, String malShareKey, String virusTotalKey, String triageKey, String virusShareKey) throws NoServicesSetException, NoHashesFoundException {
         this.hashes = hashes;
         this.outputPath = outputPath;
         this.threadCount = threadCount;
@@ -100,12 +109,14 @@ public class Arguments {
         this.malShareKey = malShareKey;
         this.virusTotalKey = virusTotalKey;
         this.triageKey = triageKey;
+        this.virusShareKey = virusShareKey;
 
         if (koodousKey == null
                 && malwareBazaarKey == null
                 && malShareKey == null
                 && virusTotalKey == null
-                && triageKey == null) {
+                && triageKey == null
+                && virusShareKey == null) {
             throw new NoServicesSetException("No services have been set in the arguments object, as all API keys are null!");
         }
 
@@ -116,6 +127,43 @@ public class Arguments {
         if (this.threadCount <= 0) {
             this.threadCount = 1;
         }
+    }
+
+    /**
+     * Gets the available platforms in a list. The order of the platforms in the
+     * list are the same order via which they are called in order to fetch a
+     * hash
+     *
+     * @return the available platforms during this run
+     */
+    public List<String> getAvailablePlatforms() {
+        List<String> platforms = new ArrayList<>();
+
+        if (triageKey != null) {
+            platforms.add("Triage");
+        }
+
+        if (malwareBazaarKey != null) {
+            platforms.add("Malware Bazaar");
+        }
+
+        if (malShareKey != null) {
+            platforms.add("MalShare");
+        }
+
+        if (virusShareKey != null) {
+            platforms.add("VirusShare");
+        }
+
+        if (virusTotalKey != null) {
+            platforms.add("VirusTotal");
+        }
+
+        if (koodousKey != null) {
+            platforms.add("Koodous");
+        }
+
+        return platforms;
     }
 
     /**
@@ -190,5 +238,14 @@ public class Arguments {
      */
     public String getTriageKey() {
         return triageKey;
+    }
+
+    /**
+     * The API key of VirusShare, can be null if the API key is not used
+     *
+     * @return the API key
+     */
+    public String getVirusShareKey() {
+        return virusShareKey;
     }
 }

@@ -51,10 +51,15 @@ public class Koodous extends GenericEndpoint implements IEndpoint {
      *
      * @param hash the hash to look for
      * @return the sample as a byte array
-     * @throws SampleNotFoundException if the sample cannot be found
+     * @throws SampleNotFoundException if the sample cannot be found or if the
+     * hash is invalid
      */
     @Override
     public byte[] getSample(String hash) throws SampleNotFoundException {
+        //Checks if the given hash is valid
+        if (hash == null || hash.isEmpty() || hash.isBlank()) {
+            throw new SampleNotFoundException("The given hash is null, empty, or consists of only white space characters!");
+        }
         //Get the SHA-256 hash via the search function of the API, as only SHA-256 hashes can be used when downloading a sample
         String sha256Hash = getSha256Hash(hash);
         //Return the API's response

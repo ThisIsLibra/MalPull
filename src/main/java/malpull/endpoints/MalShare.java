@@ -16,15 +16,21 @@
  */
 package malpull.endpoints;
 
+import java.io.IOException;
 import malpull.exceptions.SampleNotFoundException;
-import okhttp3.Request;
+import malshareapi.MalShareApi;
 
 /**
  * This class is used to get a sample from the MalShare database via its API.
  *
  * @author Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]
  */
-public class MalShare extends GenericEndpoint implements IEndpoint {
+public class MalShare implements IEndpoint {
+
+    /**
+     * An instance of the MalShare API library
+     */
+    private MalShareApi api;
 
     /**
      * Creates an object to interact with the MalShare API
@@ -32,20 +38,17 @@ public class MalShare extends GenericEndpoint implements IEndpoint {
      * @param key the MalShare API key which is required to use the API
      */
     public MalShare(String key) {
-        //Sets the apiBase variable in the abstract GenericEndpoint class
-        super("https://malshare.com/api.php?api_key=" + key + "&action=", "MalShare");
+        api = new MalShareApi(key);
     }
 
     /**
-     * This API call will return a byte array if the sample is found. If it is
-     * not found, a plain text response that starts with "Sample not found by
-     * hash" is given.
+     * Gets the endpoint name
      *
-     * @param hash the sample's hash
-     * @return the URL to get the sample from
+     * @return the name of the endpoint
      */
-    private String getDownloadUrl(String hash) {
-        return apiBase + "getfile&hash=" + hash;
+    @Override
+    public String getName() {
+        return "MalShare";
     }
 
     /**
@@ -58,28 +61,10 @@ public class MalShare extends GenericEndpoint implements IEndpoint {
      */
     @Override
     public byte[] getSample(String hash) throws SampleNotFoundException {
-        //Gets the URL
-        String url = getDownloadUrl(hash);
-        //Create the request based on the URL
-        Request request = new Request.Builder()
-                .url(url)
-                .build();
-        //Get the result from the API
-        byte[] result = downloader.get(request);
-        //Convert the result into a new string to check what the result is
-        String temp = new String(result);
-        /**
-         * If the sample is not present in the MalShare API, a plain text string
-         * is returned. This string contains the "Sample not found by hash"
-         * text. If string contains this text, the sample cannot be found.
-         * Otherwise, the returned value is the raw file
-         */
-        if (temp.contains("Sample not found by hash")) {
-            //If the sample cannot be found, an exception is thrown
+        try {
+            return api.getFile(hash);
+        } catch (IOException ex) {
             throw new SampleNotFoundException("Sample " + hash + " not found on MalShare!");
         }
-        //Return the sample
-        return result;
     }
-
 }

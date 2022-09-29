@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import malpull.endpoints.VirusShare;
 import malpull.exceptions.NoArgumentsSetException;
 import malpull.model.MalPullResult;
 
@@ -123,13 +124,17 @@ public class MalPull {
             IEndpoint malShare = new MalShare(arguments.getMalShareKey());
             endpoints.add(malShare);
         }
-        if (arguments.getKoodousKey() != null) {
-            IEndpoint koodous = new Koodous(arguments.getKoodousKey());
-            endpoints.add(koodous);
+        if (arguments.getVirusShareKey() != null) {
+            IEndpoint virusShare = new VirusShare(arguments.getVirusShareKey());
+            endpoints.add(virusShare);
         }
         if (arguments.getVirusTotalKey() != null) {
             IEndpoint virusTotal = new VirusTotal(arguments.getVirusTotalKey());
             endpoints.add(virusTotal);
+        }
+        if (arguments.getKoodousKey() != null) {
+            IEndpoint koodous = new Koodous(arguments.getKoodousKey());
+            endpoints.add(koodous);
         }
 
         //Create a download worker for the hash, with all configured endpoints embedded
@@ -255,6 +260,6 @@ public class MalPull {
      * @return the version information
      */
     public String getVersionInformation() {
-        return "MalPull version 1.3-stable by Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]\n";
+        return "MalPull version 1.4-stable by Max 'Libra' Kersten [@Libranalysis, https://maxkersten.nl]\n";
     }
 }
